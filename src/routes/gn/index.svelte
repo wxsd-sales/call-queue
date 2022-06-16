@@ -7,6 +7,7 @@
 
 	let assistanceHasBeenRequested = false;
 	let assitanceIsReady = false;
+	let iframeIsLoading = false;
 	let meetingURL = '';
 	let readyToJoin = false;
 	let socket;
@@ -77,62 +78,71 @@
 		</div>
 	</div>
 	<div class="hero-body p-4 has-background-white">
-		<div class="container has-text-centered">
-			{#if readyToJoin}
-				<iframe src={meetingURL} allow="camera;microphone" style="width: 100%; height:40rem;" />
-			{:else if assitanceIsReady}
-				<div class="is-size-4 mb-4">Virtual nurse is now available!</div>
-				<button class="button is-size-5 mt-6 is-primary is-centered" on:click={joinSession}
-					>Join Support Session
-				</button>
-			{:else if assistanceHasBeenRequested}
-				<div class="is-size-5">
-					Your request has been queued. A virtual nurse will reach out shortly.
-				</div>
-				<button class="button is-size-5 mt-6 is-danger is-centered" on:click={cancelRequest}
-					>Cancel Request
-				</button>
-			{:else}
-				<div class="title is-size-4">Looking for Assistance?</div>
-				<button class="button is-size-5 mt-6 is-primary is-centered" on:click={requestAssistance}
-					>Request Assistance
-				</button>
+		<div
+			class="container is-flex is-justify-content-center	is-align-items-center is-flex-direction-column"
+		>
+			<span
+				class="bulma-loader-mixin"
+				class:is-hidden={!iframeIsLoading}
+				style="position:absolute"
+			/>
+			<iframe
+				title="meeting"
+				src={meetingURL}
+				class:is-hidden={!readyToJoin}
+				allow="camera;microphone"
+				style="width: 100%; height:40rem;"
+				on:load={() => {
+					iframeIsLoading = false;
+				}}
+			/>
+			{#if !readyToJoin}
+				{#if assitanceIsReady}
+					<div class="title is-size-4 mb-4">Virtual nurse is now available!</div>
+					<button class="button is-size-5 mt-6 is-primary is-centered" on:click={joinSession}
+						>Join Support Session
+					</button>
+				{:else if assistanceHasBeenRequested}
+					<div class="is-size-5 has-text-centered">
+						Your request has been queued. A virtual nurse will reach out shortly.
+					</div>
+					<button class="button is-size-5 mt-6 is-danger is-centered" on:click={cancelRequest}
+						>Cancel Request
+					</button>
+				{:else}
+					<div class="title is-size-4">Looking for Assistance?</div>
+					<button class="button is-size-5 mt-6 is-primary is-centered" on:click={requestAssistance}
+						>Request Assistance
+					</button>
+				{/if}
 			{/if}
 		</div>
 	</div>
 	<div class="hero-foot mt-4 mb-2">
 		<nav class="level is-mobile">
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-view-dashboard " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2 ">
+					<i class="mdi mdi-36px mdi-view-dashboard " />
+				</span>
 				<div>Dashboard</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-account " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2">
+					<i class="mdi mdi-36px mdi-account " />
+				</span>
 				<div>Patients</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-contacts " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2 ">
+					<i class="mdi mdi-36px mdi-contacts " />
+				</span>
 				<div>Contacts</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-white is-active mb-1">
-					<span class="icon has-text-info  ">
-						<i class="mdi mdi-24px mdi-contacts " />
-					</span>
-				</button>
-				<div>Alerts</div>
+				<span class="icon has-text-info mb-2 ">
+					<i class="mdi mdi-36px mdi-bell " />
+				</span>
+				<div class="has-text-info">Alerts</div>
 			</div>
 		</nav>
 	</div>

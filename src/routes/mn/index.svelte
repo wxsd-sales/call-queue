@@ -13,8 +13,9 @@
 	let displayQueue = true;
 	let joinSession = false;
 	let joinButtonIsLoading = false;
+	let iframeIsLoading = false;
 	let selectedGradNurse = {};
-	let meetingURL;
+	let meetingURL = '';
 
 	HCA_MAIN_SOCKET.on('message', (message) => {
 		if (message.command === 'append' && !queue.some((q) => q.ID === message.data)) {
@@ -38,11 +39,7 @@
 
 	const startSession = async () => {
 		joinButtonIsLoading = true;
-		HCA_MAIN_SOCKET.emit('message', {
-			command: 'remove',
-			set: 'queue',
-			data: selectedGradNurse.ID
-		});
+
 		try {
 			const {
 				data: { redirect }
@@ -53,11 +50,17 @@
 					guid: selectedGradNurse.ID
 				}
 			});
-			// meetingURL = `${redirect}&embedSize=small&sessionID=${selectedGradNurse.ID}`;
-			meetingURL =
-				'https://tahanson.eu.ngrok.io/guest?destination=rtaylorhanson.wxsd@webex.com&embedSize=small&headerToggle=false&autoDial=false&sessionId=ajsdjhjasd&token=NjIxZTJhM2EtMjJlOS00NDJkLWJjMTItMmViOGViMDYyZDFiYmVhYmM3Y2QtZGU5_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f';
+
+			meetingURL = `${redirect}&embedSize=small&sessionID=${selectedGradNurse.ID}`;
 			joinSession = true;
 			joinButtonIsLoading = false;
+			iframeIsLoading = true;
+
+			HCA_MAIN_SOCKET.emit('message', {
+				command: 'remove',
+				set: 'queue',
+				data: selectedGradNurse.ID
+			});
 		} catch (error) {
 			console.log(error);
 		}
@@ -93,81 +96,83 @@
 <section class="hero is-fullheight">
 	<div class="hero-head ">
 		<div class="box has-background-info  ">
-			<div class="columns is-mobile ">
-				{#if !displayQueue}
-					<div class="column is-2">
-						<button
-							class="button has-background-white is-active mb-1"
-							on:click={() => {
-								displayQueue = true;
-							}}
-						>
-							<span class="icon has-text-info  ">
-								<i class="mdi mdi-24px mdi-arrow-left " />
-							</span>
-						</button>
-					</div>
-				{/if}
-				<div class="column is-10 title has-text-white has-text-centered is-4">
-					Nurse Support Queue
-				</div>
-			</div>
+			{#if !displayQueue && !joinSession}
+				<span
+					class="icon has-text-white "
+					style="display: block; position:absolute;"
+					on:click={() => {
+						displayQueue = true;
+					}}
+				>
+					<i class="mdi mdi-24px mdi-arrow-left " />
+				</span>
+			{/if}
+			<div class="title has-text-white has-text-centered is-4">Nurse Support Queue</div>
 		</div>
 	</div>
 	<div class="hero-body p-4 has-background-white">
-		<div class="container has-text-centered">
-			{#if joinSession}
-				<iframe src={meetingURL} allow="camera;microphone" style="width: 100%; height:40rem;" />
-			{:else if displayQueue}
-				<div class="queue">
-					{#each queue as q}
-						<QueueItem onClick={handleClick} data={q} />
-					{/each}
-				</div>
-			{:else}
-				<QueueItem data={selectedGradNurse} />
-				<button
-					class="button is-size-5 mt-6 is-primary is-centered"
-					class:is-loading={joinButtonIsLoading}
-					on:click={startSession}
-					>Start Support Session
-				</button>
+		<div
+			class="container has-text-centered is-flex is-justify-content-center	is-align-items-center is-flex-direction-column"
+		>
+			<span
+				class="bulma-loader-mixin"
+				class:is-hidden={!iframeIsLoading}
+				style="position:absolute"
+			/>
+			<iframe
+				title="meeting"
+				class:is-hidden={!joinSession}
+				src={meetingURL}
+				allow="camera;microphone"
+				style="width: 100%; height:40rem;"
+				on:load={() => {
+					iframeIsLoading = false;
+				}}
+			/>
+			{#if !joinSession}
+				{#if displayQueue}
+					<div class="queue">
+						{#each queue as q}
+							<QueueItem onClick={handleClick} data={q} />
+						{/each}
+					</div>
+				{:else}
+					<QueueItem data={selectedGradNurse} />
+					<button
+						class="button is-size-5 mt-6 is-primary is-centered"
+						class:is-loading={joinButtonIsLoading}
+						on:click={startSession}
+						>Start Support Session
+					</button>
+				{/if}
 			{/if}
 		</div>
 	</div>
 	<div class="hero-foot mt-4 mb-2">
 		<nav class="level is-mobile">
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-view-dashboard " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2 ">
+					<i class="mdi mdi-36px mdi-view-dashboard " />
+				</span>
 				<div>Dashboard</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-account " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2">
+					<i class="mdi mdi-36px mdi-account " />
+				</span>
 				<div>Patients</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-grey-light mb-1">
-					<span class="icon has-text-light ">
-						<i class="mdi mdi-24px mdi-contacts " />
-					</span>
-				</button>
+				<span class="icon has-text-grey mb-2 ">
+					<i class="mdi mdi-36px mdi-contacts " />
+				</span>
 				<div>Contacts</div>
 			</div>
 			<div class="level-item has-text-centered is-flex is-flex-direction-column">
-				<button class="button has-background-white is-active mb-1">
-					<span class="icon has-text-info  ">
-						<i class="mdi mdi-24px mdi-contacts " />
-					</span>
-				</button>
-				<div>Alerts</div>
+				<span class="icon has-text-info mb-2 ">
+					<i class="mdi mdi-36px mdi-bell " />
+				</span>
+				<div class="has-text-info">Alerts</div>
 			</div>
 		</nav>
 	</div>
