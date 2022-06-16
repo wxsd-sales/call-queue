@@ -5,13 +5,13 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta http-equiv="content-security-policy" content="">
-	<link rel="stylesheet" href="/call-queue-on-mobile-devices/_app/immutable/assets/pages/__layout.svelte-6ddffe6a.css">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/start-59452e90.js">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/chunks/index-e1f22567.js">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/chunks/index-b324aac7.js">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/pages/__layout.svelte-bd9a028e.js">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/pages/gn/index.svelte-b11f459d.js">
-	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/immutable/chunks/store-00f0b9f0.js">
+	<link rel="stylesheet" href="/call-queue-on-mobile-devices/_app/assets/pages/__layout.svelte-1a1780d9.css">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/start-a8ac2407.js">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/chunks/index-5847b98e.js">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/chunks/index-92189d85.js">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/pages/__layout.svelte-daa94275.js">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/pages/gn/index.svelte-6866f517.js">
+	<link rel="modulepreload" href="/call-queue-on-mobile-devices/_app/chunks/store-f96ab972.js">
 </head>
 
 <body>
@@ -34,19 +34,22 @@
 				<div class="has-text-info">Alerts</div></div></nav></div></section></main>
 
 
-		<script type="module" data-sveltekit-hydrate="17tjotm">
-		import { start } from "/call-queue-on-mobile-devices/_app/immutable/start-59452e90.js";
+		<script type="module" data-hydrate="17tjotm">
+		import { start } from "/call-queue-on-mobile-devices/_app/start-a8ac2407.js";
 		start({
-			target: document.querySelector('[data-sveltekit-hydrate="17tjotm"]').parentNode,
+			target: document.querySelector('[data-hydrate="17tjotm"]').parentNode,
 			paths: {"base":"/call-queue-on-mobile-devices","assets":"/call-queue-on-mobile-devices"},
 			session: {},
 			route: true,
 			spa: false,
-			trailing_slash: "always",
+			trailing_slash: "never",
 			hydrate: {
 				status: 200,
 				error: null,
-				nodes: [0, 2],
+				nodes: [
+					import("/call-queue-on-mobile-devices/_app/pages/__layout.svelte-daa94275.js"),
+						import("/call-queue-on-mobile-devices/_app/pages/gn/index.svelte-6866f517.js")
+				],
 				params: {},
 				routeId: "gn"
 			}
