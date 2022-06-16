@@ -15,6 +15,7 @@
 	"devDependencies": {
 		"@mdi/font": "^6.7.96",
 		"@sveltejs/adapter-auto": "next",
+		"@sveltejs/adapter-static": "^1.0.0-next.34",
 		"@sveltejs/kit": "next",
 		"@types/cookie": "^0.5.1",
 		"@typescript-eslint/eslint-plugin": "^5.27.0",
@@ -30,6 +31,7 @@
 		"sass": "^1.52.3",
 		"socket.io-client": "^4.5.1",
 		"svelte": "^3.46.0",
+		"svelte-adapter-github": "^0.0.1-next.0",
 		"svelte-check": "^2.7.1",
 		"svelte-preprocess": "^4.10.5",
 		"tslib": "^2.3.1",

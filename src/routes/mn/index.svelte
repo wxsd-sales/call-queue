@@ -5,10 +5,10 @@
 	import { onMount } from 'svelte';
 	import axios from 'axios';
 	import { NODE_SERVER_URL } from '$lib/constants';
-	import { gradNurseID } from '$lib/store';
+	import { virtualNurseID } from '$lib/store';
 	import { v4 as uuidv4 } from 'uuid';
 
-	$gradNurseID = $gradNurseID ? $gradNurseID : uuidv4();
+	$virtualNurseID = $virtualNurseID ? $virtualNurseID : uuidv4();
 	let queue = [];
 	let displayQueue = true;
 	let joinSession = false;
@@ -18,6 +18,24 @@
 	let meetingURL = '';
 
 	HCA_MAIN_SOCKET.on('message', (message) => {
+		if (message.room === $virtualNurseID) {
+			console.log('are we here?');
+			if (message.data.event === 'members-update') {
+				if (
+					message.data.payload.updated.some(
+						(participant: any) => participant.isSelf && !participant.isInMeeting
+					)
+				) {
+					console.log('here');
+
+					displayQueue = true;
+					joinSession = false;
+					joinButtonIsLoading = false;
+					iframeIsLoading = false;
+				}
+			}
+		}
+
 		if (message.command === 'append' && !queue.some((q) => q.ID === message.data)) {
 			queue = [
 				{
@@ -51,7 +69,7 @@
 				}
 			});
 
-			meetingURL = `${redirect}&embedSize=small&sessionID=${selectedGradNurse.ID}`;
+			meetingURL = `${redirect}&autoDial=true&embedSize=desktop&sessionId=${$virtualNurseID}`;
 			joinSession = true;
 			joinButtonIsLoading = false;
 			iframeIsLoading = true;
@@ -61,6 +79,9 @@
 				set: 'queue',
 				data: selectedGradNurse.ID
 			});
+
+			queue = queue.filter((q) => q.ID !== selectedGradNurse.ID);
+			selectedGradNurse = {};
 		} catch (error) {
 			console.log(error);
 		}
@@ -78,6 +99,10 @@
 
 					return newQ;
 				});
+
+				const userExists = queue.some((q) => q.ID === $virtualNurseID);
+				$virtualNurseID = userExists ? $virtualNurseID : uuidv4();
+				HCA_MAIN_SOCKET.emit('join', $virtualNurseID);
 			}
 		});
 

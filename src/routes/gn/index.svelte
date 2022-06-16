@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { SOAP_BOX_URL, MAIN_ROOM, HCA_MAIN_SOCKET } from '$lib/constants';
 	import { v4 as uuidv4 } from 'uuid';
-	import { io } from 'socket.io-client';
 	import { gradNurseID } from '$lib/store';
 	import { onMount } from 'svelte';
 
@@ -10,7 +9,6 @@
 	let iframeIsLoading = false;
 	let meetingURL = '';
 	let readyToJoin = false;
-	let socket;
 
 	const cancelRequest = () => {
 		HCA_MAIN_SOCKET.emit('message', {
@@ -33,20 +31,31 @@
 			data: $gradNurseID
 		};
 
-		socket.on('message', (message) => {
-			console.log('DATA', message);
+		HCA_MAIN_SOCKET.on('message', (message) => {
 			if (message.room === $gradNurseID) {
 				if (message.data.event === 'meeting-link') {
 					assitanceIsReady = true;
-					meetingURL = `${message.data.payload}&embedsize=small&sessionId=${$gradNurseID}`;
+					meetingURL = `${message.data.payload}&autoDial=true&embedSize=desktop&sessionId=${$gradNurseID}`;
 				}
 				if (message.data.event === 'members-update') {
-					console.log('MEMBERS UPDATE', message.data.payload);
+					if (
+						message.data.payload.updated.some(
+							(participant: any) => participant.isSelf && !participant.isInMeeting
+						)
+					) {
+						readyToJoin = false;
+						assitanceIsReady = false;
+						assistanceHasBeenRequested = false;
+						iframeIsLoading = false;
+					}
+				}
+				if (message.data.event === 'meeting-state-change') {
+					console.log('MEETING STATE CHANGE', message.data.payload);
 				}
 			}
 		});
 
-		socket.emit('message', message);
+		HCA_MAIN_SOCKET.emit('message', message);
 		assistanceHasBeenRequested = true;
 	};
 
@@ -60,7 +69,7 @@
 				message.data = message.data ? message.data : [];
 				const userExists = message.data.some((q) => q.value === $gradNurseID);
 				$gradNurseID = userExists ? $gradNurseID : uuidv4();
-				socket = io(SOAP_BOX_URL, { query: `room=${$gradNurseID}` });
+				HCA_MAIN_SOCKET.emit('join', $gradNurseID);
 			}
 		});
 
