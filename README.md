@@ -1,38 +1,129 @@
-# create-svelte
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+<!-- PROJECT LOGO -->
+<br />
+<p align="center">
+  <h2 align="center">Expert Help Calling Queue</h2>
 
-## Creating a project
+  <p align="center">
+  Manage and receive call requests in an orderly manner (FIFO) with to connect with experts using backed by Webex Meeting
+    <br />
+    <a href="https://github.com/wxsd-sales/call-queue"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    View Demo
+    [<a href="https://call-queue.wbx.ninja/requester">Requester Page</a> -
+    <a href="https://call-queue.wbx.ninja/responder">Responser Page</a>]
+    ·
+    <a href="https://github.com/wxsd-sales/call-queue/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/wxsd-sales/call-queue/issues">Request Feature</a>
+  </p>
+</p>
 
-If you're seeing this, you've probably already done this step. Congrats!
+<!-- TABLE OF CONTENTS -->
+<details open="open">
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
-```bash
-# create a new project in the current directory
-npm init svelte
+<!-- ABOUT THE PROJECT -->
 
-# create a new project in my-app
-npm init svelte my-app
-```
+## About The Project
 
-## Developing
+[![Product Name Screen Shot][product-screenshot]](https://call-queue.wbx.ninja/requester)
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Integrate Webex in a simple browser app to assist users to connect with experts fot assistance via Webex Meeting.
 
-```bash
-npm run dev
+### Built With
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+- [Webex Browser SDK](https://github.com/webex/webex-js-sdk)
+- [SvelteJS](https://reactjs.org)
+- [TypeScript](https://www.typescriptlang.org/)
 
-## Building
+<!-- GETTING STARTED -->
 
-To create a production version of your app:
+## Getting Started
 
-```bash
-npm run build
-```
+If you would like to contribute to our source code and to improve our demo, please follow the steps mentioned below:
 
-You can preview the production build with `npm run preview`.
+### Installation
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+1. Clone the repo
+   ```sh
+   git clone https://github.com/wxsd-sales/call-queue.git
+   ```
+2. We use NVM to manage our node.js machine versioning. You can learn more about NVM [here](https://github.com/nvm-sh/nvm)
+   ```sh
+   nvm use
+   ```
+3. Install the packages via [Yarn](https://classic.yarnpkg.com/en/)
+   ```sh
+   npm i
+   ```
+4. Start the server
+   ```sh
+   npm start
+   ```
+
+<!-- CONTRIBUTING -->
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch in your forked repo (`git checkout -b myrepo/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin myrepo/AmazingFeature`)
+5. Open a Pull Request
+
+<!-- LICENSE -->
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+<!-- CONTACT -->
+
+## Contact
+
+Arash Koushkebaghi - [LinkedIn](https://www.linkedin.com/in/arash-koushkebaghi-9b1701a4/) - [Github](https://github.com/akoushke)
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
+[contributors-shield]: https://img.shields.io/github/contributors/WXSD-Sales/WebexVoicea.svg?style=for-the-badge
+[contributors-url]: https://github.com/wxsd-sales/call-queue/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/WXSD-Sales/WebexVoicea.svg?style=for-the-badge
+[forks-url]: https://github.com/wxsd-sales/call-queue/network/members
+[stars-shield]: https://img.shields.io/github/stars/WXSD-Sales/WebexVoicea.svg?style=for-the-badge
+[stars-url]: https://github.com/wxsd-sales/call-queue/stargazers
+[issues-shield]: https://img.shields.io/github/issues/WXSD-Sales/WebexVoicea.svg?style=for-the-badge
+[issues-url]: https://github.com/wxsd-sales/call-queue/issues
+[license-shield]: https://img.shields.io/github/license/WXSD-Sales/WebexVoicea.svg?style=for-the-badge
+[license-url]: https://github.com/wxsd-sales/call-queue/blob/master/LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/arash-koushkebaghi-9b1701a4/
+[product-screenshot]: assets/call-queue.png

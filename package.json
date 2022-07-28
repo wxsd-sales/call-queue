@@ -3,11 +3,12 @@
 	"version": "0.0.1",
 	"homepage": "https://akoushke.github.io/call-queue-on-mobile-devices",
 	"scripts": {
-		"dev": "svelte-kit dev",
+		"start": "svelte-kit dev",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
-		"preview": "svelte-kit preview",
+		"preview": "svelte-kit preview --host",
 		"prepare": "svelte-kit sync",
+		"publish": "node ./.svelte-kit/publish/index.js",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check --plugin-search-dir=. . && eslint .",
@@ -16,8 +17,8 @@
 	"devDependencies": {
 		"@mdi/font": "^6.7.96",
 		"@sveltejs/adapter-auto": "next",
-		"@sveltejs/adapter-static": "^1.0.0-next.34",
-		"@sveltejs/kit": "next",
+		"@sveltejs/adapter-static": "1.0.0-next.30",
+		"@sveltejs/kit": "1.0.0-next.327",
 		"@types/cookie": "^0.5.1",
 		"@typescript-eslint/eslint-plugin": "^5.27.0",
 		"@typescript-eslint/parser": "^5.27.0",
@@ -26,12 +27,13 @@
 		"eslint": "^8.16.0",
 		"eslint-config-prettier": "^8.3.0",
 		"eslint-plugin-svelte3": "^4.0.0",
+		"gh-pages": "^4.0.0",
 		"moment": "^2.29.3",
 		"prettier": "^2.6.2",
 		"prettier-plugin-svelte": "^2.7.0",
 		"sass": "^1.52.3",
 		"socket.io-client": "^4.5.1",
-		"svelte": "^3.46.0",
+		"svelte": "^3.48.0",
 		"svelte-adapter-github": "^0.0.1-next.0",
 		"svelte-check": "^2.7.1",
 		"svelte-preprocess": "^4.10.5",
@@ -42,6 +44,7 @@
 	"type": "module",
 	"dependencies": {
 		"@fontsource/fira-mono": "^4.5.0",
-		"cookie": "^0.4.1"
+		"cookie": "^0.4.1",
+		"svelte-kit": "^1.0.0"
 	}
 }
