@@ -11,7 +11,7 @@
   <h2 align="center">Expert Help Calling Queue</h2>
 
   <p align="center">
-  Manage and receive call requests in an orderly manner (FIFO) with to connect with experts using backed by Webex Meeting
+  Manage and receive call requests in an orderly manner (FIFO) to connect with experts backed by Webex Meeting
     <br />
     <a href="https://github.com/wxsd-sales/call-queue"><strong>Explore the docs »</strong></a>
     <br />
