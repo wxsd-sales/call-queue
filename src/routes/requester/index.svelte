@@ -44,7 +44,6 @@
 			id: 'remove'
 		});
 
-		$gradNurseID = undefined;
 		assistanceHasBeenRequested = false;
 	};
 
@@ -71,7 +70,6 @@
 		HCA_MAIN_SOCKET.on('message', (message) => {
 			if (message.command === 'remove') {
 				if (message.data === $gradNurseID) {
-					$gradNurseID = undefined;
 					assistanceHasBeenRequested = false;
 					readyToJoin = false;
 					assitanceIsReady = false;
