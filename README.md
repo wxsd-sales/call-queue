@@ -33,6 +33,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
+        <li><a href="#how-to-test">How to Test</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -55,6 +56,10 @@
 [![Product Name Screen Shot][product-screenshot]](https://call-queue.wbx.ninja/requester)
 
 Integrate Webex in a simple browser app to assist users to connect with experts fot assistance via Webex Meeting.
+
+### How to Test
+As shown in the screenshot above, there are two views embedded in this app. One view is built for the requester (left figure) and the other is for the responder (right figure).
+in order for the responder to view any requests, they would need any requester to submit a request. Once a requester has submitted a request, responder will have few options to manage the request. responder could either cancel the request or accept and start a session with the requester. After the session had ended, both responder and the requester will be redirected to the initial view.
 
 ### Built With
 

@@ -12,6 +12,7 @@
 	let finalMeetingURL = '';
 	let readyToJoin = false;
 	let showModal = false;
+	let userHungup = false;
 	let tempID;
 	let orderMsg = `You are next!`;
 
@@ -68,12 +69,17 @@
 		});
 
 		HCA_MAIN_SOCKET.on('message', (message) => {
+			console.log(message);
 			if (message.command === 'remove') {
 				if (message.data === $gradNurseID) {
 					assistanceHasBeenRequested = false;
 					readyToJoin = false;
 					assitanceIsReady = false;
-					showModal = true;
+					if (!userHungup) {
+						showModal = true;
+					} else {
+						userHungup = false;
+					}
 				} else {
 					if (tempID != message.data) {
 						if (message.index < $queueOrder) {
@@ -86,6 +92,7 @@
 			if (message.room === $gradNurseID) {
 				if (message.data.event === 'meeting-link') {
 					assitanceIsReady = true;
+					userHungup = false;
 					meetingURL = `${message.data.payload}&autoDial=true&embedSize=desktop&sessionId=${$gradNurseID}`;
 				}
 				if (message.data.event === 'members-update') {
@@ -102,6 +109,7 @@
 						assitanceIsReady = false;
 						assistanceHasBeenRequested = false;
 						iframeIsLoading = false;
+						userHungup = true;
 						cancelRequest();
 					}
 				}
