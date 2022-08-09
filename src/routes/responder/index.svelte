@@ -53,6 +53,14 @@
 			if (!queue.some((q) => q.ID === selectedGradNurse.ID)) {
 				displayQueue = true;
 			}
+
+			if (joinSession) {
+				meetingURL = '';
+				displayQueue = true;
+				joinButtonIsLoading = false;
+				iframeIsLoading = false;
+				joinSession = false;
+			}
 		}
 
 		if (message.command === 'hset') {
@@ -87,8 +95,6 @@
 			joinSession = true;
 			joinButtonIsLoading = false;
 			iframeIsLoading = true;
-
-			joinButtonIsLoading = false;
 		} catch (error) {
 			console.log(error);
 		}
