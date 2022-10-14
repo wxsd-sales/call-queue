@@ -17,6 +17,7 @@
 	let selectedGradNurse = {};
 	let meetingURL = '';
 	let showModal = false;
+	let iframe;
 
 	HCA_MAIN_SOCKET.on('message', (message) => {
 		if (message.room === $virtualNurseID) {
@@ -41,7 +42,8 @@
 				{
 					timeStamp: moment().local(),
 					ID: message.key,
-					status: message.data.status
+					status: message.data.status,
+					meetingType: message.data.meetingType
 				}
 			];
 		}
@@ -74,8 +76,7 @@
 		}
 	});
 
-	const startSession = async () => {
-		joinButtonIsLoading = true;
+	const startGuestDemoSession = async () => {
 		try {
 			const {
 				data: { redirect }
@@ -97,6 +98,93 @@
 			iframeIsLoading = true;
 		} catch (error) {
 			console.log(error);
+		}
+	};
+	const startSession = async () => {
+		joinButtonIsLoading = true;
+		const isIC = selectedGradNurse.meetingType === 'IC';
+
+		if (isIC) {
+			const {
+				data: {
+					guest: [guestData],
+					host: [hostData]
+				}
+			} = await axios({
+				method: 'post',
+				url: 'https://mtg-broker-a.wbx2.com/api/v1/joseencrypt',
+				headers: {
+					Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+				},
+				data: {
+					aud: 'a4d886b0-979f-4e2c-a958-3e8c14605e51',
+					jwt: {
+						sub: 'calling-queue-demo'
+					}
+				}
+			});
+
+			const [
+				{
+					data: { token: hostToken }
+				},
+				{
+					data: { token: guestToken }
+				}
+			] = await axios.all([
+				axios({
+					method: 'get',
+					url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${hostData}`,
+					headers: {
+						Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+					}
+				}),
+				axios({
+					method: 'get',
+					url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${guestData}`,
+					headers: {
+						Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+					}
+				})
+			]);
+			meetingURL = `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${hostData}`;
+			joinSession = true;
+			joinButtonIsLoading = false;
+
+			HCA_MAIN_SOCKET.emit('message', {
+				command: 'set',
+				set: 'IC_GUEST_URL',
+				data: {
+					link: `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${guestData}`,
+					guestToken,
+					gradNurseID: selectedGradNurse.ID
+				}
+			});
+
+			const webexSDK = new window.Webex({
+				credentials: {
+					access_token: hostToken
+				}
+			});
+
+			await webexSDK.meetings.register();
+
+			webexSDK.meetings.on('meeting:removed', (addedMeetingEvent) => {
+				meetingURL = '';
+				displayQueue = true;
+				joinButtonIsLoading = false;
+				joinSession = false;
+
+				HCA_MAIN_SOCKET.emit('message', {
+					command: 'set',
+					set: 'REMOVE_IC_GUEST_URL',
+					data: {
+						gradNurseID: selectedGradNurse.ID
+					}
+				});
+			});
+		} else {
+			await startGuestDemoSession();
 		}
 	};
 
@@ -121,7 +209,8 @@
 					const newQ = {
 						timeStamp: moment(q.score).local(),
 						ID: q.value,
-						status: JSON.parse(q.data).status
+						status: JSON.parse(q.data).status,
+						meetingType: JSON.parse(q.data).meetingType
 					};
 
 					return newQ;
@@ -171,6 +260,7 @@
 		<iframe
 			title="meeting"
 			class:is-hidden={!joinSession}
+			bind:this={iframe}
 			src={meetingURL}
 			allow="camera;microphone"
 			on:load={() => {
@@ -192,7 +282,7 @@
 				{/if}
 			{:else}
 				<div class="box is-translucent-black p-0">
-					<div class="is-flex is-justify-content-end m-2">
+					<div class="is-flex is-justify-content-flex-end m-2">
 						<span
 							class="icon has-text-danger "
 							on:click={() => {

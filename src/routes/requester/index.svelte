@@ -14,6 +14,12 @@
 	let showModal = false;
 	let tempID;
 	let orderMsg = `You are next!`;
+	let meetingType = 'SDK';
+	let renderMeetingTypes = browser
+		? window.navigator.userAgent.includes('Cisco Webex Desk Pro')
+			? false
+			: true
+		: false;
 
 	const sendStatus = (status) => {
 		HCA_MAIN_SOCKET.emit('message', {
@@ -47,6 +53,68 @@
 		assistanceHasBeenRequested = false;
 	};
 
+	HCA_MAIN_SOCKET.on('message-response', (message) => {
+		if (message.index || message.index === 0) {
+			$queueOrder = message.index;
+		}
+	});
+
+	HCA_MAIN_SOCKET.on('message', async (message) => {
+		if (message.command === 'remove') {
+			if (message.data === $gradNurseID) {
+				assistanceHasBeenRequested = false;
+				readyToJoin = false;
+				assitanceIsReady = false;
+			} else {
+				if (tempID != message.data) {
+					if (message.index < $queueOrder) {
+						$queueOrder -= 1;
+					}
+					tempID = message.data;
+				}
+			}
+		}
+		if (message.room === $gradNurseID) {
+			if (message.data.event === 'meeting-link') {
+				assitanceIsReady = true;
+				meetingURL = `${message.data.payload}&autoDial=true&embedSize=desktop&sessionId=${$gradNurseID}`;
+			}
+			if (message.data.event === 'members-update') {
+				if (
+					message.data.payload.updated.some(
+						(participant: any) => participant.isSelf && !participant.isInMeeting
+					) ||
+					message.data.payload.updated.some(
+						(participant: any) => participant.isHost && participant.status === 'NOT_IN_MEETING'
+					)
+				) {
+					meetingURL = '';
+					readyToJoin = false;
+					assitanceIsReady = false;
+					iframeIsLoading = false;
+					cancelRequest();
+				}
+			}
+			if (message.data.event === 'meeting-state-change') {
+				console.log('MEETING STATE CHANGE', message.data.payload);
+			}
+		}
+		if (message.set === 'IC_GUEST_URL' && $gradNurseID === message.data.gradNurseID) {
+			const {
+				data: { link, guestToken }
+			} = message;
+			assitanceIsReady = true;
+			meetingURL = link;
+		}
+
+		if (message.set === 'REMOVE_IC_GUEST_URL' && $gradNurseID === message.data.gradNurseID) {
+			readyToJoin = false;
+			assitanceIsReady = false;
+			iframeIsLoading = false;
+			cancelRequest();
+		}
+	});
+
 	const requestAssistance = () => {
 		if (!$gradNurseID) {
 			$gradNurseID = uuidv4();
@@ -58,58 +126,8 @@
 			set: 'queue',
 			key: $gradNurseID,
 			id: 'append',
-			data: { status: 'active' }
+			data: { status: 'active', meetingType }
 		};
-
-		HCA_MAIN_SOCKET.on('message-response', (message) => {
-			if (message.index || message.index === 0) {
-				$queueOrder = message.index;
-			}
-		});
-
-		HCA_MAIN_SOCKET.on('message', (message) => {
-			console.log(message);
-			if (message.command === 'remove') {
-				if (message.data === $gradNurseID) {
-					assistanceHasBeenRequested = false;
-					readyToJoin = false;
-					assitanceIsReady = false;
-				} else {
-					if (tempID != message.data) {
-						if (message.index < $queueOrder) {
-							$queueOrder -= 1;
-						}
-						tempID = message.data;
-					}
-				}
-			}
-			if (message.room === $gradNurseID) {
-				if (message.data.event === 'meeting-link') {
-					assitanceIsReady = true;
-					meetingURL = `${message.data.payload}&autoDial=true&embedSize=desktop&sessionId=${$gradNurseID}`;
-				}
-				if (message.data.event === 'members-update') {
-					if (
-						message.data.payload.updated.some(
-							(participant: any) => participant.isSelf && !participant.isInMeeting
-						) ||
-						message.data.payload.updated.some(
-							(participant: any) => participant.isHost && participant.status === 'NOT_IN_MEETING'
-						)
-					) {
-						meetingURL = '';
-						readyToJoin = false;
-						assitanceIsReady = false;
-						assistanceHasBeenRequested = false;
-						iframeIsLoading = false;
-						cancelRequest();
-					}
-				}
-				if (message.data.event === 'meeting-state-change') {
-					console.log('MEETING STATE CHANGE', message.data.payload);
-				}
-			}
-		});
 
 		HCA_MAIN_SOCKET.emit('message', message);
 		assistanceHasBeenRequested = true;
@@ -127,11 +145,15 @@
 			if (message.id === 'initial-queue-request') {
 				message.data = message.data ? message.data : [];
 				const userExists = message.data.some((q) => q.value === $gradNurseID);
-				$gradNurseID = userExists ? $gradNurseID : uuidv4();
+				const retrivedID = userExists ? $gradNurseID : uuidv4();
+
+				if (retrivedID === $gradNurseID) {
+					assistanceHasBeenRequested = true;
+				}
+
 				HCA_MAIN_SOCKET.emit('join', $gradNurseID);
 			}
 			if (message.id === 'initial-label-request') {
-				console.log(message.data);
 			}
 		});
 
@@ -163,7 +185,10 @@
 			}}
 		/>
 		{#if !readyToJoin}
-			<div class="box is-flex is-flex-direction-column is-translucent-black pb-5">
+			<div
+				class="box is-flex is-flex-direction-column is-translucent-black pb-5"
+				style="padding: 2rem;"
+			>
 				{#if assitanceIsReady}
 					<div class="title has-text-white is-size-5 mb-4">Representative is now available!</div>
 					<button class="button is-size-5 mt-6 is-primary is-centered" on:click={joinSession}
@@ -192,6 +217,30 @@
 						on:click={requestAssistance}
 						>Request Assistance
 					</button>
+					{#if renderMeetingTypes}
+						<div class="control has-text-white is-size-6" style="margin: 1rem 0 0.25rem 0;">
+							<label class="radio">
+								<input
+									type="radio"
+									name="meeting"
+									value="SDK"
+									checked={meetingType === 'SDK'}
+									on:change={(e) => (meetingType = e.currentTarget.value)}
+								/>
+								Meeting SDK
+							</label>
+							<label class="radio">
+								<input
+									type="radio"
+									name="meeting"
+									checked={meetingType === 'IC'}
+									value="IC"
+									on:change={(e) => (meetingType = e.currentTarget.value)}
+								/>
+								Instant Connect
+							</label>
+						</div>
+					{/if}
 					<div class="has-text-white mt-4" style="font-size: 0.65rem ">
 						* Unanswered request will auto-expire in 30 minutes
 					</div>

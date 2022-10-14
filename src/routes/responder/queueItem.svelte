@@ -59,7 +59,7 @@
 					<span class={`icon has-text-${data?.status === 'active' ? 'success' : 'warning'}`}>
 						<i class="mdi mdi-18px mdi-circle " />
 					</span>
-					<div class="subtitle has-text-weight-semibold has-text-white ml-1">Support Request</div>
+					<div class="subtitle has-text-weight-medium has-text-white ml-1">Support Request</div>
 				</div>
 			</div>
 			<div class="column has-text-white is-4 is-size-6 has-text-right">
@@ -67,7 +67,7 @@
 			</div>
 		</div>
 		<div class="columns mb-5 mt-4">
-			<div class="column has-text-left-desktop has-text-white " style="padding: 0 0 0 0.75rem">
+			<div class="column has-text-left-desktop has-text-white ">
 				You have a new support meeting request
 			</div>
 		</div>
