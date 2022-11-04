@@ -57,9 +57,15 @@
 
 Integrate Webex in a simple browser app to assist users to connect with experts fot assistance via Webex Meeting.
 
-### How to Test
 As shown in the screenshot above, there are two views embedded in this app. One view is built for the requester (left figure) and the other is for the responder (right figure).
 in order for the responder to view any requests, they would need any requester to submit a request. Once a requester has submitted a request, responder will have few options to manage the request. responder could either cancel the request or accept and start a session with the requester. After the session had ended, both responder and the requester will be redirected to the initial view.
+
+### Url Parameters
+This PoC accepts the following URL parameters: (note the following parameters must be appended in both views (requester/responder))
+| Parameter  | Required | Description |
+| ------------- | ------------- | ------------- |
+| title | optional | Title inside the header section, no title results into no header  |
+| backgroundImg | optional | The publicly accessible URL of a custom background image to use. |
 
 ### Built With
 

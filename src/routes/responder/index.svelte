@@ -201,7 +201,6 @@
 
 	onMount(() => {
 		showModal = false;
-		$headerTitle = 'Support Queue';
 		HCA_MAIN_SOCKET.on('message-response', (message) => {
 			if (message.id === 'initial-queue-request') {
 				queue = message.data ? message.data : [];

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { readable } from 'svelte/store';
 	import moment from 'moment';
+	import { meetingType } from '$lib/store';
 
 	export let onClick = (data: unknown) => {};
 	export let data;
@@ -71,8 +72,15 @@
 				You have a new support meeting request
 			</div>
 		</div>
-		<div class="columns mt-1">
-			<div class="column pb-0 has-text-white has-text-center time" style="font-size: 0.75rem;">
+		<div class="columns pb-0 has-text-white has-text-center time" style="font-size: 0.75rem;">
+			<div
+				class="column is-flex is-align-items-flex-end is-justify-content-center meetingType has-text-weight-semibold"
+			>
+				{data.meetingType === 'SDK'
+					? 'Provided By: Webex Browser SDK'
+					: 'Provided By: Webex Instant Connect'}
+			</div>
+			<div class="column">
 				<div>Your request will auto expire in: {minutes} mins {seconds}s</div>
 				<div>
 					Please use the <span class="has-text-danger">X</span> icon to manually cancel this request
@@ -84,6 +92,9 @@
 
 <style>
 	@media screen and (min-width: 480px) {
+		.meetingType {
+			justify-content: flex-start !important;
+		}
 		.time {
 			text-align: right !important;
 		}

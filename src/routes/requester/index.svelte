@@ -60,6 +60,7 @@
 	});
 
 	HCA_MAIN_SOCKET.on('message', async (message) => {
+		console.log('incoming', message);
 		if (message.command === 'remove') {
 			if (message.data === $gradNurseID) {
 				assistanceHasBeenRequested = false;
@@ -140,7 +141,6 @@
 
 	onMount(() => {
 		showModal = false;
-		$headerTitle = 'Support Request';
 		HCA_MAIN_SOCKET.on('message-response', (message) => {
 			if (message.id === 'initial-queue-request') {
 				message.data = message.data ? message.data : [];
