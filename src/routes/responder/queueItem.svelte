@@ -8,6 +8,7 @@
 	export let data;
 	let start;
 	let timer = 30 * 60;
+	console.log(data.sessionStatus);
 
 	const mstime = readable(new Date().getTime(), (set) => {
 		let animationFrame;
@@ -41,12 +42,13 @@
 	$: seconds = toWait - minutes * 60;
 </script>
 
-<div class="box is-translucent-black pt-2 pb-5 item">
+<div class="box is-translucent-black pt-2 pb-5 item" class:flash={data.sessionStatus === 'active'}>
 	<div class="close mb-2">
 		<button
 			class="button p-0 customButton"
 			style="border: none; background-color: transparent; height: 2rem;"
 			on:click={close}
+			disabled={data.sessionStatus === 'active'}
 		>
 			<span class="icon has-text-danger">
 				<i class="mdi mdi-24px mdi-close " />
@@ -57,10 +59,22 @@
 		<div class="columns is-mobile">
 			<div class="column is-8">
 				<div class="is-flex is-align-items-center ">
-					<span class={`icon has-text-${data?.status === 'active' ? 'success' : 'warning'}`}>
+					<span
+						class={`icon has-text-${
+							data?.sessionStatus === 'active'
+								? 'danger'
+								: data?.status === 'active'
+								? 'success'
+								: 'warning'
+						}`}
+					>
 						<i class="mdi mdi-18px mdi-circle " />
 					</span>
-					<div class="subtitle has-text-weight-medium has-text-white ml-1">Support Request</div>
+					{#if data.sessionStatus === 'active'}
+						<div class="subtitle has-text-weight-medium has-text-white ml-1">In Session</div>
+					{:else}
+						<div class="subtitle has-text-weight-medium has-text-white ml-1">Support Request</div>
+					{/if}
 				</div>
 			</div>
 			<div class="column has-text-white is-4 is-size-6 has-text-right">

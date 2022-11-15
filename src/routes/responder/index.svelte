@@ -43,6 +43,7 @@
 					timeStamp: moment().local(),
 					ID: message.key,
 					status: message.data.status,
+					sessionStatus: message.data.sessionStatus,
 					meetingType: message.data.meetingType
 				}
 			];
@@ -68,9 +69,13 @@
 		if (message.command === 'hset') {
 			queue = queue.map((item) => {
 				if (item.ID === message.key) {
-					item.status = message.data.status;
+					if (message.data.status) {
+						item.status = message.data.status;
+					}
+					if (message.data.sessionStatus) {
+						item.sessionStatus = message.data.sessionStatus;
+					}
 				}
-
 				return item;
 			});
 		}
@@ -100,92 +105,104 @@
 			console.log(error);
 		}
 	};
+
+	const startICSession = async () => {
+		const {
+			data: {
+				guest: [guestData],
+				host: [hostData]
+			}
+		} = await axios({
+			method: 'post',
+			url: 'https://mtg-broker-a.wbx2.com/api/v1/joseencrypt',
+			headers: {
+				Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+			},
+			data: {
+				aud: 'a4d886b0-979f-4e2c-a958-3e8c14605e51',
+				jwt: {
+					sub: 'calling-queue-demo'
+				}
+			}
+		});
+
+		const [
+			{
+				data: { token: hostToken }
+			},
+			{
+				data: { token: guestToken }
+			}
+		] = await axios.all([
+			axios({
+				method: 'get',
+				url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${hostData}`,
+				headers: {
+					Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+				}
+			}),
+			axios({
+				method: 'get',
+				url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${guestData}`,
+				headers: {
+					Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
+				}
+			})
+		]);
+		meetingURL = `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${hostData}`;
+		joinSession = true;
+		joinButtonIsLoading = false;
+
+		HCA_MAIN_SOCKET.emit('message', {
+			command: 'set',
+			set: 'IC_GUEST_URL',
+			data: {
+				link: `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${guestData}`,
+				guestToken,
+				gradNurseID: selectedGradNurse.ID
+			}
+		});
+
+		const webexSDK = new window.Webex({
+			credentials: {
+				access_token: hostToken
+			}
+		});
+
+		await webexSDK.meetings.register();
+
+		webexSDK.meetings.on('meeting:removed', (addedMeetingEvent) => {
+			meetingURL = '';
+			displayQueue = true;
+			joinButtonIsLoading = false;
+			joinSession = false;
+
+			HCA_MAIN_SOCKET.emit('message', {
+				command: 'set',
+				set: 'REMOVE_IC_GUEST_URL',
+				data: {
+					gradNurseID: selectedGradNurse.ID
+				}
+			});
+		});
+	};
+
 	const startSession = async () => {
 		joinButtonIsLoading = true;
 		const isIC = selectedGradNurse.meetingType === 'IC';
 
 		if (isIC) {
-			const {
-				data: {
-					guest: [guestData],
-					host: [hostData]
-				}
-			} = await axios({
-				method: 'post',
-				url: 'https://mtg-broker-a.wbx2.com/api/v1/joseencrypt',
-				headers: {
-					Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
-				},
-				data: {
-					aud: 'a4d886b0-979f-4e2c-a958-3e8c14605e51',
-					jwt: {
-						sub: 'calling-queue-demo'
-					}
-				}
-			});
-
-			const [
-				{
-					data: { token: hostToken }
-				},
-				{
-					data: { token: guestToken }
-				}
-			] = await axios.all([
-				axios({
-					method: 'get',
-					url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${hostData}`,
-					headers: {
-						Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
-					}
-				}),
-				axios({
-					method: 'get',
-					url: `https://mtg-broker-a.wbx2.com/api/v1/space?org=952e87f4-5c49-4ca1-b285-ee0570c2498c&int=jose&v=1&data=${guestData}`,
-					headers: {
-						Authorization: `Bearer NTBlN2VkZmEtMzhjMC00NWYwLWIzOGUtN2EyMjdjN2Q1NGQ3ZjEzODMyN2UtYjNh_P0A1_952e87f4-5c49-4ca1-b285-ee0570c2498c`
-					}
-				})
-			]);
-			meetingURL = `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${hostData}`;
-			joinSession = true;
-			joinButtonIsLoading = false;
-
-			HCA_MAIN_SOCKET.emit('message', {
-				command: 'set',
-				set: 'IC_GUEST_URL',
-				data: {
-					link: `https://instant.webex.com/hc/v1/talk?int=jose&v=1&data=${guestData}`,
-					guestToken,
-					gradNurseID: selectedGradNurse.ID
-				}
-			});
-
-			const webexSDK = new window.Webex({
-				credentials: {
-					access_token: hostToken
-				}
-			});
-
-			await webexSDK.meetings.register();
-
-			webexSDK.meetings.on('meeting:removed', (addedMeetingEvent) => {
-				meetingURL = '';
-				displayQueue = true;
-				joinButtonIsLoading = false;
-				joinSession = false;
-
-				HCA_MAIN_SOCKET.emit('message', {
-					command: 'set',
-					set: 'REMOVE_IC_GUEST_URL',
-					data: {
-						gradNurseID: selectedGradNurse.ID
-					}
-				});
-			});
+			await startICSession();
 		} else {
 			await startGuestDemoSession();
 		}
+
+		HCA_MAIN_SOCKET.emit('message', {
+			data: { sessionStatus: 'active' },
+			key: selectedGradNurse.ID,
+			set: 'queue',
+			command: 'hset'
+		});
 	};
 
 	const removeQueue = (selectedNurse) => {
@@ -199,6 +216,20 @@
 		queue = queue.filter((q) => q.ID !== selectedNurse.ID);
 	};
 
+	const handleClick = (selectedNurse) => {
+		if (selectedNurse.command) {
+			if (selectedNurse.command === 'close') {
+				showModal = true;
+			} else if (selectedNurse.command === 'force-close') {
+				removeQueue(selectedNurse);
+			}
+		} else {
+			displayQueue = false;
+		}
+
+		selectedGradNurse = selectedNurse;
+	};
+
 	onMount(() => {
 		showModal = false;
 		HCA_MAIN_SOCKET.on('message-response', (message) => {
@@ -209,6 +240,7 @@
 						timeStamp: moment(q.score).local(),
 						ID: q.value,
 						status: JSON.parse(q.data).status,
+						sessionStatus: JSON.parse(q.data).sessionStatus,
 						meetingType: JSON.parse(q.data).meetingType
 					};
 
@@ -224,27 +256,8 @@
 		HCA_MAIN_SOCKET.on('connect', () => {
 			const message = { command: 'list', set: 'queue', id: 'initial-queue-request' };
 			HCA_MAIN_SOCKET.emit('message', message);
-			HCA_MAIN_SOCKET.emit('message', {
-				command: 'set',
-				set: 'labels',
-				data: { responder: $responderLabel, requester: $requesterLabel }
-			});
 		});
 	});
-
-	const handleClick = (selectedNurse) => {
-		if (selectedNurse.command) {
-			if (selectedNurse.command === 'close') {
-				showModal = true;
-			} else if (selectedNurse.command === 'force-close') {
-				removeQueue(selectedNurse);
-			}
-		} else {
-			displayQueue = false;
-		}
-
-		selectedGradNurse = selectedNurse;
-	};
 </script>
 
 <div class="hero-body p-4 ">

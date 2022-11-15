@@ -117,17 +117,13 @@
 	});
 
 	const requestAssistance = () => {
-		if (!$gradNurseID) {
-			$gradNurseID = uuidv4();
-		}
-
 		const message = {
 			room: MAIN_ROOM,
 			command: 'append',
 			set: 'queue',
 			key: $gradNurseID,
 			id: 'append',
-			data: { status: 'active', meetingType }
+			data: { status: 'active', meetingType, sessionStatus: 'inactive' }
 		};
 
 		HCA_MAIN_SOCKET.emit('message', message);
@@ -145,13 +141,15 @@
 			if (message.id === 'initial-queue-request') {
 				message.data = message.data ? message.data : [];
 				const userExists = message.data.some((q) => q.value === $gradNurseID);
-				const retrivedID = userExists ? $gradNurseID : uuidv4();
 
-				if (retrivedID === $gradNurseID) {
+				if (userExists) {
 					assistanceHasBeenRequested = true;
+				} else {
+					$gradNurseID = uuidv4();
 				}
 
 				HCA_MAIN_SOCKET.emit('join', $gradNurseID);
+				console.log('JOIN', $gradNurseID);
 			}
 			if (message.id === 'initial-label-request') {
 			}
