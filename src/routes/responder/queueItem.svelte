@@ -8,7 +8,6 @@
 	export let data;
 	let start;
 	let timer = 30 * 60;
-	console.log(data.sessionStatus);
 
 	const mstime = readable(new Date().getTime(), (set) => {
 		let animationFrame;
@@ -32,7 +31,9 @@
 
 	mstime.subscribe(() => {
 		if (minutes === 0 && seconds === 0) {
-			onClick({ ...data, command: 'force-close' });
+			if (data.sessionStatus === ' inactive') {
+				onClick({ ...data, command: 'force-close' });
+			}
 		}
 	});
 
@@ -95,7 +96,9 @@
 					: 'Provided By: Webex Instant Connect'}
 			</div>
 			<div class="column">
-				<div>Your request will auto expire in: {minutes} mins {seconds}s</div>
+				{#if data.sessionStatus === 'inactive'}
+					<div>Your request will auto expire in: {minutes} mins {seconds}s</div>
+				{/if}
 				<div>
 					Please use the <span class="has-text-danger">X</span> icon to manually cancel this request
 				</div>
