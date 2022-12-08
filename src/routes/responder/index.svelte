@@ -1,12 +1,20 @@
 <script lang="ts">
 	import QueueItem from './queueItem.svelte';
 	import moment from 'moment';
-	import { SOAP_BOX_URL, MAIN_ROOM, HCA_MAIN_SOCKET } from '$lib/constants';
+	import {
+		SOAP_BOX_URL,
+		MAIN_ROOM,
+		HCA_MAIN_SOCKET,
+		NODE_SERVER_URL_GUEST_DEMO,
+		NODE_SERVER_URL_SIP_DEMO,
+		DUMMY_USER_WEBEX_ID
+	} from '$lib/constants';
 	import { onMount } from 'svelte';
 	import axios from 'axios';
-	import { NODE_SERVER_URL } from '$lib/constants';
 	import { virtualNurseID, headerTitle, requesterLabel, responderLabel } from '$lib/store';
 	import { v4 as uuidv4 } from 'uuid';
+	import { updated } from '$app/stores';
+	import { validateToken } from '$lib/token-utils';
 
 	$virtualNurseID = $virtualNurseID ? $virtualNurseID : uuidv4();
 	let queue = [];
@@ -18,6 +26,7 @@
 	let meetingURL = '';
 	let showModal = false;
 	let iframe;
+	let dummyToken;
 
 	HCA_MAIN_SOCKET.on('message', (message) => {
 		if (message.room === $virtualNurseID) {
@@ -87,13 +96,9 @@
 				data: { redirect }
 			} = await axios({
 				method: 'post',
-				url: NODE_SERVER_URL,
+				url: NODE_SERVER_URL_GUEST_DEMO,
 				data: {
-					guid: selectedGradNurse.ID,
-					labels: {
-						requester: $requesterLabel,
-						responder: $responderLabel
-					}
+					guid: selectedGradNurse.ID
 				}
 			});
 
@@ -163,9 +168,13 @@
 			}
 		});
 
+		await monitorMeeting(hostToken);
+	};
+
+	const monitorMeeting = async (token) => {
 		const webexSDK = new window.Webex({
 			credentials: {
-				access_token: hostToken
+				access_token: token
 			}
 		});
 
@@ -187,14 +196,109 @@
 		});
 	};
 
+	const createMeeting = async () => {
+		let start_date = new Date(new Date().getTime() + 90 * 1000); //90 seconds in the future
+		let end_date = new Date(start_date.getTime() + 1 * 60 * 60 * 1000); //1 hour after start_date
+		let body = {
+			title: 'Consultation Session',
+			start: start_date,
+			end: end_date,
+			allowAnyUserToBeCoHost: true,
+			allowAuthenticatedDevices: true,
+			enableAutomaticLock: false,
+			enableConnectAudioBeforeHost: true,
+			enabledAutoRecordMeeting: false,
+			enabledJoinBeforeHost: true,
+			sendEmail: false,
+			unlockedMeetingJoinSecurity: 'allowJoin'
+		};
+
+		const { data } = await axios.post('https://webexapis.com/v1/meetings', body, {
+			headers: {
+				Authorization: `Bearer ${dummyToken.access_token}`,
+				'Content-Type': 'application/json'
+			}
+		});
+
+		return { sipAddress: data.sipAddress, pin: data.hostKey };
+	};
+
+	const startSIPSession = async () => {
+		try {
+			joinSession = true;
+			joinButtonIsLoading = false;
+			iframeIsLoading = true;
+
+			const { sipAddress, pin } = await createMeeting();
+
+			const webexSDK = new window.Webex({
+				credentials: {
+					access_token: dummyToken.access_token
+				}
+			});
+
+			await webexSDK.meetings.register();
+			const meeting = await webexSDK.meetings.create(sipAddress);
+			await meeting.join({ pin, moderator: true });
+			meeting.unlockMeeting();
+
+			// meeting.members.on('members:update', async ({ delta, full }) => {
+			// 	const newMembers = Object.values({ ...full, ...delta.updated, ...delta.added });
+			// 	newMembers.forEach((nm) => {
+			// 		if (nm.isInLobby) {
+			// 			console.log('admitted', nm);
+			// 			meeting.members.admitMembers([nm.id]);
+			// 		}
+			// 	});
+
+			// 	const members = Object.values({ ...full, ...delta.updated, ...delta.added });
+			// 	const guestHasLeft = members.some(
+			// 		(member) => member.isGuest && member.status === 'NOT_IN_MEETING'
+			// 	);
+
+			// 	if (guestHasLeft) {
+			// 		meetingURL = '';
+			// 		displayQueue = true;
+			// 		joinButtonIsLoading = false;
+			// 		joinSession = false;
+
+			// 		HCA_MAIN_SOCKET.emit('message', {
+			// 			command: 'set',
+			// 			set: 'REMOVE_SIP_ADDRESS',
+			// 			data: {
+			// 				gradNurseID: selectedGradNurse.ID
+			// 			}
+			// 		});
+			// 	}
+			// });
+			// await monitorMeeting(hostToken, sipAddress);
+			meetingURL = `sip:${sipAddress}`;
+
+			iframeIsLoading = false;
+
+			HCA_MAIN_SOCKET.emit('message', {
+				command: 'set',
+				set: 'SIP_ADDRESS',
+				data: {
+					gradNurseID: selectedGradNurse.ID,
+					link: meetingURL
+				}
+			});
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
 	const startSession = async () => {
 		joinButtonIsLoading = true;
-		const isIC = selectedGradNurse.meetingType === 'IC';
+		const { meetingType } = selectedGradNurse;
 
-		if (isIC) {
+		if (meetingType === 'IC') {
 			await startICSession();
-		} else {
+		} else if (meetingType === 'SDK') {
 			await startGuestDemoSession();
+		} else {
+			await startSIPSession();
 		}
 
 		HCA_MAIN_SOCKET.emit('message', {
@@ -230,9 +334,9 @@
 		selectedGradNurse = selectedNurse;
 	};
 
-	onMount(() => {
+	onMount(async () => {
 		showModal = false;
-		HCA_MAIN_SOCKET.on('message-response', (message) => {
+		HCA_MAIN_SOCKET.on('message-response', async (message) => {
 			if (message.id === 'initial-queue-request') {
 				queue = message.data ? message.data : [];
 				queue = queue.map((q) => {
@@ -246,17 +350,45 @@
 
 					return newQ;
 				});
-
 				const userExists = queue.some((q) => q.ID === $virtualNurseID);
 				$virtualNurseID = userExists ? $virtualNurseID : uuidv4();
 				HCA_MAIN_SOCKET.emit('join', $virtualNurseID);
+			}
+
+			if (message.id === 'get_token') {
+				const tokens = message.data ? message.data : [];
+				const [token] = tokens.filter((token) => token.value === DUMMY_USER_WEBEX_ID);
+
+				if (!token) {
+					return;
+				}
+
+				const rawToken = JSON.parse(token.data);
+				dummyToken = await validateToken(rawToken);
+
+				if (dummyToken !== rawToken) {
+					HCA_MAIN_SOCKET.emit('message', {
+						command: 'append',
+						set: 'dummy_token',
+						id: 'append',
+						key: 'Y2lzY29zcGFyazovL3VzL1BFT1BMRS84M2Q1MGZmYi00NjVmLTRiYjctOTQzNy1hNWViMDZlZjNhZGQ',
+						data: dummyToken
+					});
+				}
 			}
 		});
 
 		HCA_MAIN_SOCKET.on('connect', () => {
 			const message = { command: 'list', set: 'queue', id: 'initial-queue-request' };
 			HCA_MAIN_SOCKET.emit('message', message);
+			const tokenMessage = { command: 'list', set: 'dummy_token', id: 'get_token' };
+			HCA_MAIN_SOCKET.emit('message', tokenMessage);
 		});
+
+		// const token = await axios.get(
+		// 	`${SOAP_BOX_URL}/message?room=${MAIN_ROOM}&command=list&set=dummy_token`
+		// );
+		// console.log(token);
 	});
 </script>
 

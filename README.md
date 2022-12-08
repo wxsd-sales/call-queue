@@ -41,6 +41,7 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#troubleShooting">Trouble Shooting</a></li>
       </ul>
     </li>
     <li><a href="#contributing">Contributing</a></li>
@@ -97,6 +98,9 @@ If you would like to contribute to our source code and to improve our demo, plea
    ```sh
    npm start
    ```
+
+### Trouble Shooting
+In case of not receiving the request on the responder's view, the fastest approach to fix the issue would be to restart the `soapbox-redis` instance in lens platform. This would resolve the issue by clearing out the queue which might have been populated in an incorrect order.
 
 <!-- CONTRIBUTING -->
 

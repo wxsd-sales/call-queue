@@ -93,7 +93,9 @@
 			>
 				{data.meetingType === 'SDK'
 					? 'Provided By: Webex Browser SDK'
-					: 'Provided By: Webex Instant Connect'}
+					: data.meetingType === 'IC'
+					? 'Provided By: Webex Instant Connect'
+					: 'Provided By: Device SIP Protocol Handler'}
 			</div>
 			<div class="column">
 				{#if data.sessionStatus === 'inactive'}

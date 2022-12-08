@@ -12,6 +12,8 @@
 	let finalMeetingURL = '';
 	let readyToJoin = false;
 	let showModal = false;
+	let meetingInSession = false;
+	let isSip = false;
 	let tempID;
 	let orderMsg = `You are next!`;
 	let meetingType = 'SDK';
@@ -43,6 +45,7 @@
 	}
 
 	const cancelRequest = () => {
+		console.log('removing', $gradNurseID);
 		HCA_MAIN_SOCKET.emit('message', {
 			command: 'remove',
 			set: 'queue',
@@ -60,7 +63,7 @@
 	});
 
 	HCA_MAIN_SOCKET.on('message', async (message) => {
-		console.log('incoming', message);
+		console.log('incoming', message.set, message.data);
 		if (message.command === 'remove') {
 			if (message.data === $gradNurseID) {
 				assistanceHasBeenRequested = false;
@@ -114,9 +117,32 @@
 			iframeIsLoading = false;
 			cancelRequest();
 		}
+
+		if (message.set === 'SIP_ADDRESS' && $gradNurseID === message.data.gradNurseID) {
+			const {
+				data: { link, guestToken }
+			} = message;
+			assitanceIsReady = true;
+			meetingURL = link;
+			isSip = true;
+		}
+
+		if (message.set === 'REMOVE_SIP_ADDRESS' && $gradNurseID === message.data.gradNurseID) {
+			readyToJoin = false;
+			assitanceIsReady = false;
+			iframeIsLoading = false;
+			meetingInSession = false;
+			cancelRequest();
+		}
 	});
 
 	const requestAssistance = () => {
+		if ($gradNurseID === undefined) {
+			$gradNurseID = uuidv4();
+			HCA_MAIN_SOCKET.emit('join', $gradNurseID);
+			console.log('joining now', $gradNurseID);
+		}
+
 		const message = {
 			room: MAIN_ROOM,
 			command: 'append',
@@ -133,9 +159,12 @@
 	const joinSession = () => {
 		readyToJoin = true;
 		finalMeetingURL = meetingURL;
+		if (isSip) {
+			meetingInSession = true;
+		}
 	};
 
-	onMount(() => {
+	onMount(async () => {
 		showModal = false;
 		HCA_MAIN_SOCKET.on('message-response', (message) => {
 			if (message.id === 'initial-queue-request') {
@@ -149,20 +178,13 @@
 				}
 
 				HCA_MAIN_SOCKET.emit('join', $gradNurseID);
-				console.log('JOIN', $gradNurseID);
-			}
-			if (message.id === 'initial-label-request') {
+				console.log('join initially', $gradNurseID);
 			}
 		});
 
 		HCA_MAIN_SOCKET.on('connect', () => {
 			const message = { command: 'list', set: 'queue', id: 'initial-queue-request' };
 			HCA_MAIN_SOCKET.emit('message', message);
-			HCA_MAIN_SOCKET.emit('message', {
-				command: 'get',
-				set: 'labels',
-				id: 'initial-label-request'
-			});
 		});
 	});
 </script>
@@ -176,12 +198,20 @@
 		<iframe
 			title="meeting"
 			src={finalMeetingURL}
-			class:is-hidden={!readyToJoin}
+			class:is-hidden={!readyToJoin && !meetingInSession}
 			allow="camera;microphone"
 			on:load={() => {
 				iframeIsLoading = false;
 			}}
 		/>
+		{#if meetingInSession}
+			<div
+				class="flash box is-flex is-flex-direction-column is-translucent-black pb-5"
+				style="padding: 2rem;"
+			>
+				<div class=" title has-text-white is-size-5 mb-4">Meeting In Session!</div>
+			</div>
+		{/if}
 		{#if !readyToJoin}
 			<div
 				class="box is-flex is-flex-direction-column is-translucent-black pb-5"
@@ -208,38 +238,48 @@
 						>Cancel Request
 					</button>
 				{:else}
-					<div class="title has-text-white is-size-4">Looking for Assistance?</div>
+					<div class="title has-text-white  has-text-centered is-size-4">
+						Looking for Assistance?
+					</div>
 					<button
-						class="button is-size-5 is-primary is-centered mb-3"
+						class="button is-size-5 is-primary is-centered mb-3 mt-6"
 						style="margin-top: 2rem;"
 						on:click={requestAssistance}
 						>Request Assistance
 					</button>
-					{#if renderMeetingTypes}
-						<div class="control has-text-white is-size-6" style="margin: 1rem 0 0.25rem 0;">
-							<label class="radio">
-								<input
-									type="radio"
-									name="meeting"
-									value="SDK"
-									checked={meetingType === 'SDK'}
-									on:change={(e) => (meetingType = e.currentTarget.value)}
-								/>
-								Meeting SDK
-							</label>
-							<label class="radio">
-								<input
-									type="radio"
-									name="meeting"
-									checked={meetingType === 'IC'}
-									value="IC"
-									on:change={(e) => (meetingType = e.currentTarget.value)}
-								/>
-								Instant Connect
-							</label>
-						</div>
-					{/if}
-					<div class="has-text-white mt-4" style="font-size: 0.65rem ">
+					<div class="control is-flex has-text-white is-size-6" style="margin: 1rem 0 0.25rem 0;">
+						<label class="radio">
+							<input
+								type="radio"
+								name="meeting"
+								value="SDK"
+								checked={meetingType === 'SDK'}
+								on:change={(e) => (meetingType = e.currentTarget.value)}
+							/>
+							Meeting SDK
+						</label>
+						<label class="radio">
+							<input
+								type="radio"
+								name="meeting"
+								checked={meetingType === 'IC'}
+								value="IC"
+								on:change={(e) => (meetingType = e.currentTarget.value)}
+							/>
+							Instant Connect
+						</label>
+						<label class="radio">
+							<input
+								type="radio"
+								name="meeting"
+								checked={meetingType === 'SIP'}
+								value="SIP"
+								on:change={(e) => (meetingType = e.currentTarget.value)}
+							/>
+							SIP URI Dialing
+						</label>
+					</div>
+					<div class="has-text-white has-text-centered mt-5" style="font-size: 0.65rem ">
 						* Unanswered request will auto-expire in 30 minutes
 					</div>
 				{/if}
