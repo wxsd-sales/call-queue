@@ -66,7 +66,22 @@ This PoC accepts the following URL parameters: (note the following parameters mu
 | Parameter  | Required | Description |
 | ------------- | ------------- | ------------- |
 | title | optional | Title inside the header section, no title results into no header  |
-| backgroundImg | optional | The publicly accessible URL of a custom background image to use. |
+| backgroundImage | optional | The publicly accessible URL of a custom background image to use. |
+| filter | optional | Filter meeting type options from a given list : IC, SDK and SIP
+
+
+### Sample Urls
+ **Requester Sample Url**
+
+ ```
+ https://call-queue.wbx.ninja/requester?title=Webex%20Queue%20App&filter=IC,SDK&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
+ ```
+
+ **Responder Sample Url**
+ 
+ ```
+ https://call-queue.wbx.ninja/responder?title=Webex%20Queue%20App&filter=IC,SDK&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
+ ```
 
 ### Built With
 

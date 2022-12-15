@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.scss';
 	import image from '../demo.jpeg';
-	import { headerTitle, responderLabel, requesterLabel } from '$lib/store';
+	import { headerTitle, responderLabel, requesterLabel, filter } from '$lib/store';
 	import { page } from '$app/stores';
 
 	const backgroundImg = $page.url.searchParams.get('backgroundImage') || image;
@@ -9,6 +9,11 @@
 	$responderLabel = 'responder';
 	$requesterLabel = 'requester';
 	$headerTitle = $page.url.searchParams.get('title') || '';
+	$filter =
+		$page.url.searchParams
+			.get('filter')
+			?.split(',')
+			.map((type) => type.trim().toLocaleUpperCase()) || [];
 </script>
 
 <section

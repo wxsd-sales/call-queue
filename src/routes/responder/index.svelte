@@ -11,10 +11,11 @@
 	} from '$lib/constants';
 	import { onMount } from 'svelte';
 	import axios from 'axios';
-	import { virtualNurseID, headerTitle, requesterLabel, responderLabel } from '$lib/store';
+	import { virtualNurseID, filter } from '$lib/store';
 	import { v4 as uuidv4 } from 'uuid';
 	import { updated } from '$app/stores';
 	import { validateToken } from '$lib/token-utils';
+	import { browser } from '$app/env';
 
 	$virtualNurseID = $virtualNurseID ? $virtualNurseID : uuidv4();
 	let queue = [];
@@ -27,6 +28,7 @@
 	let showModal = false;
 	let iframe;
 	let dummyToken;
+	let isOnDevice = browser ? (window.navigator.userAgent.includes('RoomOS') ? true : false) : false;
 
 	HCA_MAIN_SOCKET.on('message', (message) => {
 		if (message.room === $virtualNurseID) {
@@ -45,17 +47,36 @@
 			}
 		}
 
-		if (message.command === 'append' && !queue.some((q) => q.ID === message.key)) {
-			queue = [
-				...queue,
-				{
-					timeStamp: moment().local(),
-					ID: message.key,
-					status: message.data.status,
-					sessionStatus: message.data.sessionStatus,
-					meetingType: message.data.meetingType
+		if (
+			message.command === 'append' &&
+			!queue.some((q) => q.ID === message.key) &&
+			!$filter.includes(message.data.meetingType)
+		) {
+			if (message?.data?.meetingType === 'SIP') {
+				if (isOnDevice) {
+					queue = [
+						...queue,
+						{
+							timeStamp: moment().local(),
+							ID: message.key,
+							status: message.data.status,
+							sessionStatus: message.data.sessionStatus,
+							meetingType: message.data.meetingType
+						}
+					];
 				}
-			];
+			} else {
+				queue = [
+					...queue,
+					{
+						timeStamp: moment().local(),
+						ID: message.key,
+						status: message.data.status,
+						sessionStatus: message.data.sessionStatus,
+						meetingType: message.data.meetingType
+					}
+				];
+			}
 		}
 
 		if (message.command === 'remove') {
@@ -171,7 +192,7 @@
 		await monitorMeeting(hostToken);
 	};
 
-	const monitorMeeting = async (token) => {
+	const monitorMeeting = async (token, sip = '') => {
 		const webexSDK = new window.Webex({
 			credentials: {
 				access_token: token
@@ -179,6 +200,40 @@
 		});
 
 		await webexSDK.meetings.register();
+
+		if (sip !== '') {
+			const meeting = await webexSDK.meetings.create(sip);
+			await meeting.join();
+			meeting.members.on('members:update', async ({ delta, full }) => {
+				const newMembers = Object.values({ ...full, ...delta.updated, ...delta.added });
+				newMembers.forEach((nm) => {
+					if (nm.isInLobby) {
+						console.log('admitted', nm);
+						meeting.members.admitMembers([nm.id]);
+					}
+				});
+
+				const members = Object.values({ ...full, ...delta.updated, ...delta.added });
+				const guestHasLeft = members.some(
+					(member) => member.isGuest && member.status === 'NOT_IN_MEETING'
+				);
+
+				if (guestHasLeft) {
+					meetingURL = '';
+					displayQueue = true;
+					joinButtonIsLoading = false;
+					joinSession = false;
+
+					HCA_MAIN_SOCKET.emit('message', {
+						command: 'set',
+						set: 'REMOVE_SIP_ADDRESS',
+						data: {
+							gradNurseID: selectedGradNurse.ID
+						}
+					});
+				}
+			});
+		}
 
 		webexSDK.meetings.on('meeting:removed', (addedMeetingEvent) => {
 			meetingURL = '';
@@ -229,49 +284,17 @@
 			joinButtonIsLoading = false;
 			iframeIsLoading = true;
 
-			const { sipAddress, pin } = await createMeeting();
-
-			const webexSDK = new window.Webex({
-				credentials: {
-					access_token: dummyToken.access_token
+			const {
+				data: { hostToken, sipAddress }
+			} = await axios({
+				method: 'post',
+				url: NODE_SERVER_URL_SIP_DEMO,
+				data: {
+					guid: selectedGradNurse.ID
 				}
 			});
 
-			await webexSDK.meetings.register();
-			const meeting = await webexSDK.meetings.create(sipAddress);
-			await meeting.join({ pin, moderator: true });
-			meeting.unlockMeeting();
-
-			// meeting.members.on('members:update', async ({ delta, full }) => {
-			// 	const newMembers = Object.values({ ...full, ...delta.updated, ...delta.added });
-			// 	newMembers.forEach((nm) => {
-			// 		if (nm.isInLobby) {
-			// 			console.log('admitted', nm);
-			// 			meeting.members.admitMembers([nm.id]);
-			// 		}
-			// 	});
-
-			// 	const members = Object.values({ ...full, ...delta.updated, ...delta.added });
-			// 	const guestHasLeft = members.some(
-			// 		(member) => member.isGuest && member.status === 'NOT_IN_MEETING'
-			// 	);
-
-			// 	if (guestHasLeft) {
-			// 		meetingURL = '';
-			// 		displayQueue = true;
-			// 		joinButtonIsLoading = false;
-			// 		joinSession = false;
-
-			// 		HCA_MAIN_SOCKET.emit('message', {
-			// 			command: 'set',
-			// 			set: 'REMOVE_SIP_ADDRESS',
-			// 			data: {
-			// 				gradNurseID: selectedGradNurse.ID
-			// 			}
-			// 		});
-			// 	}
-			// });
-			// await monitorMeeting(hostToken, sipAddress);
+			await monitorMeeting(hostToken, sipAddress);
 			meetingURL = `sip:${sipAddress}`;
 
 			iframeIsLoading = false;
@@ -339,17 +362,35 @@
 		HCA_MAIN_SOCKET.on('message-response', async (message) => {
 			if (message.id === 'initial-queue-request') {
 				queue = message.data ? message.data : [];
-				queue = queue.map((q) => {
-					const newQ = {
-						timeStamp: moment(q.score).local(),
-						ID: q.value,
-						status: JSON.parse(q.data).status,
-						sessionStatus: JSON.parse(q.data).sessionStatus,
-						meetingType: JSON.parse(q.data).meetingType
-					};
+				queue = queue
+					.map((q) => {
+						let newQ = undefined;
+						if (!$filter.includes(JSON.parse(q.data).meetingType)) {
+							if (JSON.parse(q.data).meetingType === 'SIP') {
+								if (isOnDevice) {
+									newQ = {
+										timeStamp: moment(q.score).local(),
+										ID: q.value,
+										status: JSON.parse(q.data).status,
+										sessionStatus: JSON.parse(q.data).sessionStatus,
+										meetingType: JSON.parse(q.data).meetingType
+									};
+								}
+							} else {
+								newQ = {
+									timeStamp: moment(q.score).local(),
+									ID: q.value,
+									status: JSON.parse(q.data).status,
+									sessionStatus: JSON.parse(q.data).sessionStatus,
+									meetingType: JSON.parse(q.data).meetingType
+								};
+							}
 
-					return newQ;
-				});
+							return newQ;
+						}
+					})
+					.filter((item) => item !== undefined);
+
 				const userExists = queue.some((q) => q.ID === $virtualNurseID);
 				$virtualNurseID = userExists ? $virtualNurseID : uuidv4();
 				HCA_MAIN_SOCKET.emit('join', $virtualNurseID);
@@ -384,11 +425,6 @@
 			const tokenMessage = { command: 'list', set: 'dummy_token', id: 'get_token' };
 			HCA_MAIN_SOCKET.emit('message', tokenMessage);
 		});
-
-		// const token = await axios.get(
-		// 	`${SOAP_BOX_URL}/message?room=${MAIN_ROOM}&command=list&set=dummy_token`
-		// );
-		// console.log(token);
 	});
 </script>
 

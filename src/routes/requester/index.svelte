@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { SOAP_BOX_URL, MAIN_ROOM, HCA_MAIN_SOCKET } from '$lib/constants';
 	import { v4 as uuidv4 } from 'uuid';
-	import { gradNurseID, headerTitle, queueOrder } from '$lib/store';
+	import { gradNurseID, headerTitle, queueOrder, filter } from '$lib/store';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/env';
+	import axios from 'axios';
 
 	let assistanceHasBeenRequested = false;
 	let assitanceIsReady = false;
@@ -17,15 +18,12 @@
 	let tempID;
 	let orderMsg = `You are next!`;
 	let meetingType = 'SDK';
-	let renderMeetingTypes = browser
-		? window.navigator.userAgent.includes('Cisco Webex Desk Pro')
-			? false
-			: true
-		: false;
+	let selectedNurse = {};
+	let isOnDevice = browser ? (window.navigator.userAgent.includes('RoomOS') ? true : false) : false;
 
 	const sendStatus = (status) => {
 		HCA_MAIN_SOCKET.emit('message', {
-			data: { status },
+			data: { ...selectedNurse, status },
 			key: $gradNurseID,
 			set: 'queue',
 			command: 'hset'
@@ -63,7 +61,6 @@
 	});
 
 	HCA_MAIN_SOCKET.on('message', async (message) => {
-		console.log('incoming', message.set, message.data);
 		if (message.command === 'remove') {
 			if (message.data === $gradNurseID) {
 				assistanceHasBeenRequested = false;
@@ -143,13 +140,14 @@
 			console.log('joining now', $gradNurseID);
 		}
 
+		selectedNurse = { status: 'active', meetingType, sessionStatus: 'inactive' };
 		const message = {
 			room: MAIN_ROOM,
 			command: 'append',
 			set: 'queue',
 			key: $gradNurseID,
 			id: 'append',
-			data: { status: 'active', meetingType, sessionStatus: 'inactive' }
+			data: selectedNurse
 		};
 
 		HCA_MAIN_SOCKET.emit('message', message);
@@ -247,37 +245,46 @@
 						on:click={requestAssistance}
 						>Request Assistance
 					</button>
-					<div class="control is-flex has-text-white is-size-6" style="margin: 1rem 0 0.25rem 0;">
-						<label class="radio">
-							<input
-								type="radio"
-								name="meeting"
-								value="SDK"
-								checked={meetingType === 'SDK'}
-								on:change={(e) => (meetingType = e.currentTarget.value)}
-							/>
-							Meeting SDK
-						</label>
-						<label class="radio">
-							<input
-								type="radio"
-								name="meeting"
-								checked={meetingType === 'IC'}
-								value="IC"
-								on:change={(e) => (meetingType = e.currentTarget.value)}
-							/>
-							Instant Connect
-						</label>
-						<label class="radio">
-							<input
-								type="radio"
-								name="meeting"
-								checked={meetingType === 'SIP'}
-								value="SIP"
-								on:change={(e) => (meetingType = e.currentTarget.value)}
-							/>
-							SIP URI Dialing
-						</label>
+					<div
+						class="control is-justify-content-space-around is-flex has-text-white is-size-6"
+						style="margin: 1rem 0 0.25rem 0;"
+					>
+						{#if !$filter.includes('SDK')}
+							<label class="radio">
+								<input
+									type="radio"
+									name="meeting"
+									value="SDK"
+									checked={meetingType === 'SDK'}
+									on:change={(e) => (meetingType = e.currentTarget.value)}
+								/>
+								Meeting SDK
+							</label>
+						{/if}
+						{#if !$filter.includes('IC')}
+							<label class="radio">
+								<input
+									type="radio"
+									name="meeting"
+									checked={meetingType === 'IC'}
+									value="IC"
+									on:change={(e) => (meetingType = e.currentTarget.value)}
+								/>
+								Instant Connect
+							</label>
+						{/if}
+						{#if !$filter.includes('SIP') && isOnDevice}
+							<label class="radio">
+								<input
+									type="radio"
+									name="meeting"
+									checked={meetingType === 'SIP'}
+									value="SIP"
+									on:change={(e) => (meetingType = e.currentTarget.value)}
+								/>
+								SIP URI Dialing
+							</label>
+						{/if}
 					</div>
 					<div class="has-text-white has-text-centered mt-5" style="font-size: 0.65rem ">
 						* Unanswered request will auto-expire in 30 minutes

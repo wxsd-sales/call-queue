@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { readable } from 'svelte/store';
 	import moment from 'moment';
-	import { meetingType } from '$lib/store';
 
 	export let onClick = (data: unknown) => {};
 	export let data;
@@ -95,7 +94,7 @@
 					? 'Provided By: Webex Browser SDK'
 					: data.meetingType === 'IC'
 					? 'Provided By: Webex Instant Connect'
-					: 'Provided By: Device SIP Protocol Handler'}
+					: 'Provided By: SIP URI Dialing Feature'}
 			</div>
 			<div class="column">
 				{#if data.sessionStatus === 'inactive'}
