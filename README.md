@@ -74,13 +74,13 @@ This PoC accepts the following URL parameters: (note the following parameters mu
  **Requester Sample Url**
 
  ```
- https://call-queue.wbx.ninja/requester?title=Webex%20Queue%20App&filter=IC,SDK&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
+ https://call-queue.wbx.ninja/requester?title=Webex%20Queue%20App&filter=IC&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
  ```
 
  **Responder Sample Url**
  
  ```
- https://call-queue.wbx.ninja/responder?title=Webex%20Queue%20App&filter=IC,SDK&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
+ https://call-queue.wbx.ninja/responder?title=Webex%20Queue%20App&filter=IC&backgroundImage=https://i.postimg.cc/jdDtwxHC/mi-ascensionprovidence.jpg
  ```
 
 ### Built With
